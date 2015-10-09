@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0" />
+    <meta content="yes" name="apple-mobile-web-app-capable" />
+    <meta content="black" name="apple-mobile-web-app-status-bar-style" />
+    <meta content="telephone=no" name="format-detection" />
+    <title>Document</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        /*阻止旋转屏幕时自动调整字体大小*/
+        html,body,form,fieldset,p,div,h1,h2,h3,h4,h5,h6{
+            -webkit-text-size-adjust: none;
+        }
+        html,body{
+            height: 100%;
+            width: 100%;
+        }
+        body{
+            position: relative;
+            overflow: hidden;
+        }
+        #wrap{
+            height: 100%;
+            width: 100%;
+            /*position: absolute;*/
+            /*left: 0;*/
+            /*top: 0;*/
+            -webkit-transition: all 800ms ease-in-out;
+            transition: all 800ms  ease-in-out;;
+            -webkit-transform-style: preserve-3d;
+            -webkit-backface-visibility: hidden;
+        }
+        #wrap .section{
+            height: 100%;
+            width: 100%;
+            text-align: center;
+            color: white;
+
+        }
+        .section1{
+            background: cadetblue;
+        }
+        .section2{
+            background: violet;
+        }
+        .section3{
+            background: salmon;
+        }
+        .section4{
+            background: orchid;
+        }
+        .section5{
+            background: orangered;
+        }
+        .section6{
+            background: cornflowerblue;
+        }
+    </style>
+</head>
+<body>
+ <div id="wrap">
+     <section class="section section1">
+         <h2>page1</h2>
+     </section>
+     <section class="section section2">
+         <h2>page2</h2>
+     </section>
+     <section class="section section3">
+         <h2>page3</h2>
+     </section>
+     <section class="section section4">
+         <h2>page4</h2>
+     </section>
+     <section class="section section5">
+         <h2>page5</h2>
+     </section>
+     <section class="section section6">
+         <h2>page6</h2>
+     </section>
+ </div>
+
+<script>
+    (function(){
+        var FULLPAGE=function(option){
+            this.wrap=document.querySelector(option.wrap);
+            this.section=document.querySelectorAll(option.section);
+            this.length=this.section.length;
+            this.index=0;
+            this.oldIndex=0;
+            this.touch={};
+
+            this.init();//初始化
+        };
+        FULLPAGE.prototype={
+            init:function(){
+                this.set();//获取当前窗口高度
+                this.bind();//绑定事件
+            },
+            set:function(){
+                this.height=document.documentElement.clientHeight || document.body.clientHeight;
+                this.wrap.style.height=this.height+"px";
+            },
+            bind:function(){
+                var self=this;
+                this.wrap.addEventListener("touchstart",function(e){
+                    self.touchStart(e);
+                },false);
+                this.wrap.addEventListener('touchmove',function(e){
+                    self.touchMove(e);
+                },false);
+                this.wrap.addEventListener('touchend',function(e){
+                    self.touchEnd(e);
+                },false);
+                this.wrap.addEventListener('touchcancel',function(e){
+                    self.touchEnd(e);
+                },false);
+                window.addEventListener('resize',function(){
+                    self.set();
+                },false)
+            },
+            touchStart:function(e){
+                this.touch.x= e.touches[0].pageX;
+                this.touch.y= e.touches[0].pageY;
+                this.touch.time=Date.now();//获取手指点击屏幕的时间戳
+                this.touch.disX=0;
+                this.touch.disY=0;
+                this.touch.fixed='';//存储当前手指手势
+            },
+            touchMove:function(e){
+                if(this.touch.fixed === "left"){
+                    return
+                }
+                e.stopPropagation();
+                if(e.touches.length > 1 || e.scale && e.scale !== 1){
+                    return
+                }
+                this.touch.disX= e.touches[0].pageX - this.touch.x;//
+                this.touch.disY= e.touches[0].pageY - this.touch.y;
+                if(this.touch.fixed === ''){
+                    //判断手势是上下移动还是左右移动
+                    if((Math.abs(this.touch.disY)) > Math.abs(this.touch.disX)){
+                        this.touch.fixed='down'
+                    }else{
+                        this.touch.fixed='left'
+                    }
+                }
+                if(this.touch.fixed === 'down'){
+                    e.preventDefault();
+                    if((this.index ===0 && this.touch.disY >0) || (this.index === this.length-1 && this.touch.disY <0)){
+                        this.touch.disY /=4;
+                    }
+                    this.wrap.style.webkitTransform='translate3d(0,'+(this.touch.disY - (this.index * this.height))+'px,0)';
+                    this.wrap.style.transform='translate3d(0,'+(this.touch.disY - (this.index * this.height))+'px,0)';
+                }
+            },
+            touchEnd:function(e){
+                if(this.touch.fixed === 'down'){
+                    var Y=Math.abs(this.touch.disY);
+                    //判断用户短时间内是否多次进行滑动
+                    if((Date.now() - this.touch.time > 100 && Y>10) || Y>this.height/2){
+                        this.touch.time=Date.now();
+                        this.touch.disY>0?this.index--:this.index++;
+                        this.index=this.index<0?0:this.index;
+                        this.index=this.index>this.length-1?this.length-1:this.index;
+                        this.wrap.style.webkitTransform='translate3d(0,'+ (-this.index * this.height)+'px,0)';
+                        this.wrap.style.transform='translate3d(0,'+ (-this.index * this.height)+'px,0)';
+                    }else{
+                        this.wrap.style.webkitTransform='translate3d(0,'+ (-this.index * this.height)+'px,0)';
+                        this.wrap.style.transform='translate3d(0,'+ (-this.index * this.height)+'px,0)';
+                    }
+                }
+            }
+        };
+        new FULLPAGE({
+            "wrap":"#wrap",
+            "section":".section"
+        });
+    })();
+</script>
+</body>
+</html>
