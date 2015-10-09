@@ -6,6 +6,7 @@
     <meta content="yes" name="apple-mobile-web-app-capable" />
     <meta content="black" name="apple-mobile-web-app-status-bar-style" />
     <meta content="telephone=no" name="format-detection" />
+    <!--<script src="js/modernizr.js"></script>-->
     <title>Document</title>
     <style>
         *{
@@ -27,13 +28,17 @@
         #wrap{
             height: 100%;
             width: 100%;
-            /*position: absolute;*/
-            /*left: 0;*/
-            /*top: 0;*/
+        }
+        .wrap-one{
             -webkit-transition: all 800ms ease-in-out;
             transition: all 800ms  ease-in-out;;
             -webkit-transform-style: preserve-3d;
             -webkit-backface-visibility: hidden;
+        }
+        .wrap-two{
+            position: absolute;
+            left: 0;
+            right: 0;
         }
         #wrap .section{
             height: 100%;
@@ -64,46 +69,78 @@
 </head>
 <body>
  <div id="wrap">
-     <section class="section section1">
+     <div class="section section1">
          <h2>page1</h2>
-     </section>
-     <section class="section section2">
+     </div>
+     <div class="section section2">
          <h2>page2</h2>
-     </section>
-     <section class="section section3">
+     </div>
+     <div class="section section3">
          <h2>page3</h2>
-     </section>
-     <section class="section section4">
+     </div>
+     <div class="section section4">
          <h2>page4</h2>
-     </section>
-     <section class="section section5">
+     </div>
+     <div class="section section5">
          <h2>page5</h2>
-     </section>
-     <section class="section section6">
+     </div>
+     <div class="section section6">
          <h2>page6</h2>
-     </section>
+     </div>
  </div>
 
 <script>
     (function(){
         var FULLPAGE=function(option){
-            this.wrap=document.querySelector(option.wrap);
-            this.section=document.querySelectorAll(option.section);
-            this.length=this.section.length;
-            this.index=0;
-            this.oldIndex=0;
+            this.wrap=document.querySelector(option.wrap);//内容框架
+            this.section=document.querySelectorAll(option.section);//每一个页面
+            this.length=this.section.length;//页面数量
+            this.index=0;//当前下标
+            this.oldIndex=0;//
             this.touch={};
+            this.timer=null;
+            this.playing=true;
+            this.speed=0;
 
             this.init();//初始化
         };
         FULLPAGE.prototype={
             init:function(){
                 this.set();//获取当前窗口高度
-                this.bind();//绑定事件
+                this.initset();//绑定事件
             },
             set:function(){
                 this.height=document.documentElement.clientHeight || document.body.clientHeight;
                 this.wrap.style.height=this.height+"px";
+            },
+            initset:function(){
+                //判断浏览器是否支持css3特性
+//                if(Modernizr.csstransforms){
+//                   this.wrap.className="wrap-one";
+//                    this.bind();
+//                }else{
+//                    this.wrap.className="wrap-two";
+//                    this.fnc(document);
+//                }
+                    //判断设备是移动端还是PC端
+                    var sUserAgent = navigator.userAgent.toLowerCase();
+                    var bIsIpad = sUserAgent.match(/ipad/i) === "ipad";
+                    var bIsIphoneOs = sUserAgent.match(/iphone os/i) == "iphone os";
+                    var bIsMidp = sUserAgent.match(/midp/i) == "midp";
+                    var bIsUc7 = sUserAgent.match(/rv:1.2.3.4/i) == "rv:1.2.3.4";
+                    var bIsUc = sUserAgent.match(/ucweb/i) == "ucweb";
+                    var bIsAndroid = sUserAgent.match(/android/i) == "android";
+                    var bIsCE = sUserAgent.match(/windows ce/i) == "windows ce";
+                    var bIsWM = sUserAgent.match(/windows mobile/i) == "windows mobile";
+                    if (bIsIpad || bIsIphoneOs || bIsMidp || bIsUc7 || bIsUc || bIsAndroid || bIsCE || bIsWM) {
+                        //移动端
+                        this.wrap.className="wrap-one";
+                        this.bind();//绑定移动事件
+                    } else {
+                        //PC端
+                        this.wrap.className="wrap-two";
+                        this.fnc(document);//绑定PC端事件
+                    }
             },
             bind:function(){
                 var self=this;
@@ -119,9 +156,13 @@
                 this.wrap.addEventListener('touchcancel',function(e){
                     self.touchEnd(e);
                 },false);
+                //当页面尺寸发生变化的时候 初始化事件
                 window.addEventListener('resize',function(){
-                    self.set();
-                },false)
+                    self.timer=setTimeout(function(){
+                        self.init();
+                    },100)
+                },false);
+                
             },
             touchStart:function(e){
                 this.touch.x= e.touches[0].pageX;
@@ -151,9 +192,9 @@
                 }
                 if(this.touch.fixed === 'down'){
                     e.preventDefault();
-                    if((this.index ===0 && this.touch.disY >0) || (this.index === this.length-1 && this.touch.disY <0)){
-                        this.touch.disY /=4;
-                    }
+//                    if((this.index ===0 && this.touch.disY >0) || (this.index === this.length-1 && this.touch.disY <0)){
+//                        this.touch.disY /=4;
+//                    }
                     this.wrap.style.webkitTransform='translate3d(0,'+(this.touch.disY - (this.index * this.height))+'px,0)';
                     this.wrap.style.transform='translate3d(0,'+(this.touch.disY - (this.index * this.height))+'px,0)';
                 }
@@ -174,8 +215,68 @@
                         this.wrap.style.transform='translate3d(0,'+ (-this.index * this.height)+'px,0)';
                     }
                 }
+            },
+            fnc:function(el){
+                //绑定鼠标滚轮事件
+                var self=this;
+                if(el.addEventListener){
+                    //火狐
+                    el.addEventListener("DOMMouseScroll",function(e){
+                        self.ScrollFnc(e)
+                    },false)
+                }
+                //IE,谷歌等
+                el.onmousewheel=function(e){
+                    self.ScrollFnc(e)
+                };
+            },
+            ScrollFnc:function(e){
+                if(!this.playing){
+                    return
+                }
+                var e=e|| window.event;
+                var t=null;
+                this.oldIndex=this.index;
+                if(e.wheelDelta){
+                    //IE,谷歌等
+                    t= e.wheelDelta;
+                    t>0?this.index--:this.index++;
+                }else if(e.detail){
+                    //火狐
+                    //火狐滚轮的值刚好与IE,谷歌等相反
+                    t= e.detail;
+                    t<0?this.index--:this.index++;
+                }
+                this.index=this.index<0?0:this.index;
+                this.index=this.index>this.length-1?this.length-1:this.index;
+                this.go();
+                e.preventDefault();
+            },
+            go:function(){
+                if(this.oldIndex === this.index){
+                    return
+                }
+                this.playing=false;
+                this.top=this.index*this.height;
+                var self=this;
+                //为了兼容低版本IE,没有使用transition
+                this.timer=setInterval(function(){
+                        if(self.oldIndex > self.index){
+                            self.speed +=30;
+                            (self.speed > -self.top) && (self.speed = -self.top)
+                        }else{
+                            self.speed -=30;
+                            (self.speed < -self.top) && (self.speed = -self.top)
+                        }
+                    self.wrap.style.top= self.speed+'px';
+                        if(self.speed === (-self.index*self.height)){
+                            clearInterval(self.timer);
+                            self.playing=true;
+                        }
+                },10)
             }
         };
+        //激活调用
         new FULLPAGE({
             "wrap":"#wrap",
             "section":".section"
